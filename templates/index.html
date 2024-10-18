@@ -31,7 +31,7 @@
         }
         .title {
             font-size: 2rem;  /* Increase font size */
-            margin: 20px 0;  /* Add space above and below the title */
+            margin-bottom: 20px;  /* Add space below the title */
         }
         .logo {
             max-width: 200px;  /* Set max width for the logo */
@@ -47,38 +47,7 @@
             background-color: #96a435;
             border-color: #96a435;
         }
-        .hidden {
-            display: none;
-        }
-        .dropdown-container {
-            display: flex; /* Use flexbox for side by side alignment */
-            justify-content: center; /* Center the dropdowns */
-            gap: 15px; /* Space between dropdowns */
-            margin: 20px 0; /* Add margin for spacing above and below */
-        }
-        .form-control {
-            width: auto; /* Set width to auto for smaller dropdowns */
-            min-width: 150px; /* Set a minimum width */
-        }
     </style>
-    <script>
-        function toggleOptions() {
-            const tarifType = document.getElementById("tarif_type").value;
-            const portfolioOptions = document.getElementById("portfolio_options");
-            const spotOptions = document.getElementById("spot_options");
-
-            if (tarifType === "Portfolio-Tarif") {
-                portfolioOptions.classList.remove("hidden");
-                spotOptions.classList.add("hidden");
-            } else if (tarifType === "Spot-Tarif") {
-                spotOptions.classList.remove("hidden");
-                portfolioOptions.classList.add("hidden");
-            } else {
-                portfolioOptions.classList.add("hidden");
-                spotOptions.classList.add("hidden");
-            }
-        }
-    </script>
 </head>
 <body>
 
@@ -88,87 +57,52 @@
         <img src="{{ url_for('static', filename='sgb_logo.png') }}" alt="Company Logo" class="logo">
     </a>
 
-    <!-- Title underneath the logo -->
-    <h1 class="title">SGB Vertragsgenerator</h1>
-
-    <!-- Instructions under the title -->
-    <div class="instructions">
-        <p>1. Excel-Template unten herunterladen</p>
-        <p>2. Daten nach Format ins Excel-Template einfügen und .xlsx Datei hochladen</p>
-        <p>3. Vertragsdokumente generieren lassen.</p>
-    </div>
-
     <!-- Success or error message display -->
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
         <div class="alert alert-{{ category }}" role="alert">
-          {% for message in messages %}
+          {% for category, message in messages %}
             {{ message }}<br>
           {% endfor %}
         </div>
       {% endif %}
     {% endwith %}
 
-    <form action="/" method="POST" enctype="multipart/form-data">
+    <!-- New title -->
+    <h1 class="title">SGB Portfolio Vertragsgenerator</h1>
+    
+    <!-- Updated instructions -->
+    <p>
+      1. Excel-Template unten herunterladen<br>
+      2. Daten nach Format ins Excel-Template einfügen und .xlsx Datei hochladen<br>
+      3. Portfolio Vertragsdokumente generieren lassen.
+    </p>
+    
+    <form action="{{ url_for('upload_file') }}" method="post" enctype="multipart/form-data">
         <div class="form-group">
-            <label for="file" class="btn btn-primary">Excel-Datei auswählen</label>
-            <input type="file" name="file" class="custom-file-input" id="file" accept=".xlsx" required>
+            <label class="custom-file-label" for="file">Wählen Sie eine Excel-Datei:</label>
+            <input type="file" class="custom-file-input" id="file" name="file" required>
+            <label class="btn btn-primary" for="file">
+                <i class="fas fa-upload"></i> Durchsuchen...
+            </label>
         </div>
-
+        
         <div class="form-group">
-            <label for="tarif_type">Tarif Typ wählen:</label>
-            <select id="tarif_type" name="tarif_type" class="form-control" onchange="toggleOptions()" required>
-                <option value="">Bitte wählen</option>
-                <option value="Portfolio-Tarif">Portfolio-Tarif</option>
-                <option value="Spot-Tarif">Spot-Tarif</option>
-            </select>
+            <a href="{{ url_for('download_template') }}" class="btn btn-primary">
+                <i class="fas fa-download"></i> Standard-Excel-Vorlage herunterladen
+            </a>
         </div>
-
-        <div id="portfolio_options" class="hidden">
-            <div class="dropdown-container">
-                <div class="form-group">
-                    <label for="laufzeit">Laufzeit (Monate):</label>
-                    <select id="laufzeit" name="laufzeit" class="form-control">
-                        <option value="12">12 Monate</option>
-                        <option value="24">24 Monate</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="energy_type">Energie Typ:</label>
-                    <select id="energy_type" name="energy_type" class="form-control">
-                        <option value="strom">Strom</option>
-                        <option value="gas">Gas</option>
-                    </select>
-                </div>
-            </div>
+        
+        <div class="form-group">
+            <button type="submit" class="btn btn-success">Verträge erstellen</button>
         </div>
-
-        <div id="spot_options" class="hidden">
-            <div class="dropdown-container">
-                <div class="form-group">
-                    <label for="zaehlerart">Zählerart:</label>
-                    <select id="zaehlerart" name="zaehlerart" class="form-control">
-                        <option value="slp">SLP</option>
-                        <option value="rlm">RLM</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="energy_type">Energie Typ:</label>
-                    <select id="energy_type" name="energy_type" class="form-control">
-                        <option value="strom">Strom</option>
-                        <option value="gas">Gas</option>
-                    </select>
-                </div>
-            </div>
-        </div>
-
-        <button type="submit" class="btn btn-success">Vertrag erstellen</button>
-        <a href="{{ url_for('download_template') }}" class="btn btn-primary">Excel-Vorlage herunterladen</a>
     </form>
 </div>
 
+<!-- Bootstrap JS and dependencies -->
 <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
 </body>
 </html>

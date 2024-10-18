@@ -9,6 +9,7 @@ app = Flask(__name__)
 # Directory and file paths
 TEMPLATE_DIR = "templates/"
 OUTPUT_DIR = "output/"
+PDF_TEMPLATE_PATH = os.path.join(TEMPLATE_DIR, "contract_template.pdf")
 EXCEL_TEMPLATE_PATH = os.path.join(TEMPLATE_DIR, "data_template.xlsx")
 
 # Helper function to create output directory
@@ -30,36 +31,20 @@ def get_pdf_fields(pdf_path):
     return fields
 
 # Function to create contracts from Excel
-def create_contracts_from_excel(excel_path, tarif_type, energy_type, duration=None, meter_type=None):
+def create_contracts_from_excel(excel_path, pdf_template_path):
     create_output_directory()  # Ensure output directory exists
     df = pd.read_excel(excel_path)
     pdf_files = []  # To keep track of generated PDFs
 
-    # Determine the PDF template based on tarif type
+    pdf_fields = get_pdf_fields(pdf_template_path)
+    
     for index, row in df.iterrows():
         if row.isnull().all():
             continue  # Skip empty rows
 
-        # Extract contract-specific variables
+        filled_fields = {pdf_field: str(row[pdf_field]) for pdf_field in pdf_fields if pdf_field in row}
         company_name = row["###company###"]
-
-        # Generate the correct template file name
-        if tarif_type == "Portfolio-Tarif":
-            if duration == "12":
-                template_name = f"portfolio_tarif_template_{energy_type}_12.pdf"
-            elif duration == "24":
-                template_name = f"portfolio_tarif_template_{energy_type}_24.pdf"
-            else:
-                continue  # Invalid duration
-        elif tarif_type == "Spot-Tarif":
-            template_name = f"spot_tarif_template_{energy_type}_{meter_type}.pdf"
-        else:
-            continue  # Invalid tarif type
-
-        pdf_template_path = os.path.join(TEMPLATE_DIR, "document_templates", template_name)
-        filled_fields = get_pdf_fields(pdf_template_path)
-        
-        output_pdf_name = f"{company_name} Antrag {tarif_type}.pdf"
+        output_pdf_name = f"{company_name} Antrag SGB Portfolio.pdf"
         output_pdf_path = os.path.join(OUTPUT_DIR, output_pdf_name)
 
         # Generate PDF
@@ -109,16 +94,9 @@ def upload_file():
     excel_path = os.path.join(TEMPLATE_DIR, file.filename)
     file.save(excel_path)
 
-    # Determine the tarif type and other inputs from the form
-    tarif_type = request.form.get("tarif_type")
-    energy_type = request.form.get("energy_type")  # New input for energy type
-    duration = request.form.get("laufzeit") if tarif_type == "Portfolio-Tarif" else None  # Duration only for Portfolio
-    meter_type = request.form.get("zaehlerart") if tarif_type == "Spot-Tarif" else None  # Meter type only for Spot
-
     # Generate PDFs from the uploaded Excel file
     create_output_directory()
-    pdf_template_folder = os.path.join(TEMPLATE_DIR, "document_templates")
-    pdf_files = create_contracts_from_excel(excel_path, tarif_type, energy_type, duration, meter_type)
+    pdf_files = create_contracts_from_excel(excel_path, PDF_TEMPLATE_PATH)
     zip_filename = create_zip(pdf_files)
 
     return render_template('success.html', pdf_files=pdf_files, zip_file=zip_filename)
@@ -142,5 +120,10 @@ def download_zip():
 def download_template():
     return send_file(EXCEL_TEMPLATE_PATH, as_attachment=True)
 
+@app.route('/hello')
+def hello():
+    return "Hello, AWS Lambda!"  # This can be removed if unnecessary
+
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 5000)), debug=True)  # Allow external connections
+
